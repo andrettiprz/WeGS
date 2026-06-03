@@ -12,9 +12,17 @@ function App() {
   const [passes, setPasses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [config, setConfig] = useState({})
 
-  const config = window.__WEGS_CONFIG__ || {}
-  const stationName = config.stationName || 'WeGS'
+  const stationName = config.station_name || 'My Ground Station'
+
+  useEffect(() => {
+    // Load config first
+    fetch('/config.json')
+      .then(r => r.json())
+      .then(cfg => { window.__WEGS_CONFIG__ = cfg; setConfig(cfg) })
+      .catch(() => {}) // config.json is optional
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -58,7 +66,7 @@ function App() {
       <Footer
         stationName={stationName}
         mapSrc={config.maps_embed_url || ''}
-        githubUrl={config.githubUrl || 'https://github.com'}
+        githubUrl={config.github_url || 'https://github.com/andrettiprz/WeGS'}
       />
     </>
   )
