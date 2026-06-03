@@ -1,70 +1,132 @@
 # WeGS Windows Installer
 # Run in PowerShell: irm https://raw.githubusercontent.com/andrettiprz/WeGS/main/install.ps1 | iex
 
-$ErrorActionPreference = "Stop"
-$Repo = "https://github.com/andrettiprz/WeGS.git"
+$ErrorActionPreference = "Continue"
+$RepoUrl = "https://github.com/andrettiprz/WeGS.git"
+$TarballUrl = "https://github.com/andrettiprz/WeGS/archive/refs/heads/main.zip"
 $InstallDir = "$env:USERPROFILE\.wegs"
 
 Write-Host ""
-Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "   WeGS v1.0 Installer (Windows)" -ForegroundColor Cyan
-Write-Host "   Ground Station Web Visualizer" -ForegroundColor Cyan
-Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Cyan
+Write-Host "║     WeGS v1.0 — Windows Installer        ║" -ForegroundColor Cyan
+Write-Host "║   Ground Station Web Visualizer         ║" -ForegroundColor Cyan
+Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
 
-# Check Python
+function ok { Write-Host "  ✓ $args" -ForegroundColor Green }
+function warn { Write-Host "  ⚠ $args" -ForegroundColor Yellow }
+function err { Write-Host "  ✗ $args" -ForegroundColor Red }
+
+# ── Check Python ──
+Write-Host "── Checking dependencies ──────────────────" -ForegroundColor Cyan
+$python = $null
 try {
-    $py = (Get-Command python -ErrorAction Stop).Source
+    $python = Get-Command python -ErrorAction Stop | Select-Object -ExpandProperty Source
     $ver = & python --version 2>&1
-    Write-Host "  OK $ver" -ForegroundColor Green
+    ok "$ver"
 } catch {
-    Write-Host "  ERROR Python 3.8+ not found. Install from https://python.org" -ForegroundColor Red
+    err "Python 3.8+ not found"
+    $answer = Read-Host "  Install Python now? (Y/n)"
+    if ($answer -ne "n" -and $answer -ne "N") {
+        Write-Host "  Opening https://python.org/downloads/ ..."
+        Start-Process "https://python.org/downloads/"
+        Write-Host "  After installing, run this script again."
+        exit 0
+    }
+    err "Python is required. Exiting."
     exit 1
 }
 
-# Check Node
+# ── Check Git ──
+$git = $null
+try { $git = Get-Command git -ErrorAction Stop | Select-Object -ExpandProperty Source; ok "git found" }
+catch {
+    warn "Git not found — will download via ZIP"
+}
+
+# ── Check Node ──
+$node = $null
 try {
-    $node = (Get-Command node -ErrorAction Stop).Source
+    $node = Get-Command node -ErrorAction Stop | Select-Object -ExpandProperty Source
     $nver = & node --version 2>&1
-    Write-Host "  OK Node $nver" -ForegroundColor Green
+    ok "Node.js $nver"
 } catch {
-    Write-Host "  ERROR Node.js 18+ not found. Install from https://nodejs.org" -ForegroundColor Red
-    exit 1
+    warn "Node.js not found"
+    $answer = Read-Host "  Install Node.js now? (Y/n)"
+    if ($answer -ne "n" -and $answer -ne "N") {
+        Write-Host "  Opening https://nodejs.org ..."
+        Start-Process "https://nodejs.org/"
+        Write-Host "  After installing, run this script again."
+        exit 0
+    }
+    warn "Skipping Node.js — web UI will use pre-built version"
 }
 
-# Clone or update
-if (Test-Path $InstallDir) {
-    Write-Host "  Updating existing install..."
+# ── Download WeGS ──
+Write-Host ""
+Write-Host "── Installing WeGS ────────────────────────" -ForegroundColor Cyan
+
+if (Test-Path "$InstallDir\.git") {
+    warn "Already installed. Updating..."
     Set-Location $InstallDir
     git pull origin main 2>$null
-} else {
-    Write-Host "  Cloning WeGS..."
-    git clone --depth 1 $Repo $InstallDir 2>$null
+    ok "Updated"
+} elseif (Test-Path $InstallDir) {
+    Write-Host "  $InstallDir already exists."
+    $answer = Read-Host "  Overwrite? (y/N)"
+    if ($answer -eq "y" -or $answer -eq "Y") {
+        Remove-Item -Recurse -Force $InstallDir
+    } else {
+        err "Aborted."; exit 0
+    }
 }
+
+if (!(Test-Path $InstallDir)) {
+    if ($git) {
+        git clone --depth 1 $RepoUrl $InstallDir 2>$null
+        ok "Cloned via git"
+    } else {
+        Write-Host "  Downloading..."
+        Invoke-WebRequest -Uri $TarballUrl -OutFile "$env:TEMP\wegs.zip"
+        Expand-Archive -Path "$env:TEMP\wegs.zip" -DestinationPath "$env:TEMP\wegs_extract" -Force
+        $extracted = Get-ChildItem "$env:TEMP\wegs_extract" | Select-Object -First 1
+        Move-Item $extracted.FullName $InstallDir -Force
+        Remove-Item "$env:TEMP\wegs.zip" -Force
+        Remove-Item "$env:TEMP\wegs_extract" -Recurse -Force
+        ok "Downloaded via ZIP"
+    }
+}
+
 Set-Location $InstallDir
 
-# Install deps
+# ── Install deps ──
 Write-Host "  Installing Python packages..."
-python -m pip install -r requirements.txt --quiet 2>$null
+python -m pip install --quiet -r requirements.txt 2>$null
+ok "Python packages"
 
-Write-Host "  Installing Node packages..."
-Set-Location "$InstallDir\web"
-npm install --silent 2>$null
-Set-Location $InstallDir
+if ($node) {
+    Set-Location "$InstallDir\web"
+    npm install --silent 2>$null
+    npm run build 2>$null
+    Set-Location $InstallDir
+    ok "Web UI built"
+} else {
+    ok "Web UI (pre-built)"
+}
 
-# Config wizard
+# ── Wizard ──
 Write-Host ""
 python wegs/setup_wizard.py
 
-# Start
+# ── Done ──
 Write-Host ""
-Write-Host "  Starting WeGS..." -ForegroundColor Cyan
-Start-Process python -ArgumentList "wegs.py", "start" -WindowStyle Hidden
-
-Start-Sleep -Seconds 3
-Write-Host ""
-Write-Host "============================================" -ForegroundColor Green
-Write-Host "   WeGS is running!" -ForegroundColor Green
-Write-Host "   http://localhost:5173" -ForegroundColor Green
-Write-Host "============================================" -ForegroundColor Green
+Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Green
+Write-Host "║        ✅  WeGS is installed!            ║" -ForegroundColor Green
+Write-Host "╠══════════════════════════════════════════╣" -ForegroundColor Green
+Write-Host "║                                          ║" -ForegroundColor Green
+Write-Host "║   Start:  cd $InstallDir                 ║" -ForegroundColor Green
+Write-Host "║           python wegs.py start           ║" -ForegroundColor Green
+Write-Host "║   Web:    http://localhost:5173          ║" -ForegroundColor Green
+Write-Host "║                                          ║" -ForegroundColor Green
+Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""

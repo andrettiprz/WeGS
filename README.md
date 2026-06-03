@@ -16,17 +16,19 @@ curl -fsSL https://raw.githubusercontent.com/andrettiprz/WeGS/main/install.sh | 
 
 ## Quick Start
 
+**Linux / macOS / Windows (WSL or Git Bash):**
+
 ```bash
-# Install (60 seconds)
 curl -fsSL https://raw.githubusercontent.com/andrettiprz/WeGS/main/install.sh | bash
-
-# The wizard asks:
-#   📡 Where are your satellite images?
-#   🏷️  What's your station name?
-#   🗺️  Google Maps embed URL? (optional)
-
-# Done! Open http://localhost:5173
 ```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/andrettiprz/WeGS/main/install.ps1 | iex
+```
+
+> 💡 On Windows without WSL, [install Git for Windows](https://git-scm.com/download/win) first (includes Git Bash). Then run the `curl | bash` command in Git Bash.
 
 ## Requirements
 
