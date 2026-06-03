@@ -305,6 +305,26 @@ def run():
     observer.schedule(handler, output, recursive=False)
     observer.start()
 
+    # Scan existing folders on startup
+    import threading as _thr
+    def _scan_existing():
+        pattern = re.compile(r"^\d{4}-\d{2}-\d{2}")
+        existing = sorted(
+            [d for d in os.listdir(output) if pattern.match(d) and os.path.isdir(os.path.join(output, d))]
+        )
+        processor = PassProcessor(cfg)
+        for folder_name in existing:
+            if not manifest.pass_exists(output, folder_name):
+                pass_path = os.path.join(output, folder_name)
+                print(f"🔄 Scanning existing: {folder_name}")
+                try:
+                    processor.process(pass_path)
+                except Exception as e:
+                    print(f"  ⚠️ Error scanning {folder_name}: {e}")
+        print(f"✅ Startup scan complete — {len(existing)} folders checked")
+
+    _thr.Thread(target=_scan_existing, daemon=True).start()
+
     tg = TelegramBot.from_config(cfg)
     if tg:
         tg.send_message(f"*WeGS Online*\\nStation: {cfg['station_name']}\\nMonitoring: `{output}`")
