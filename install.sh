@@ -85,29 +85,27 @@ fi
 
 # ── Node.js ──
 found_node=false
-for cmd in node node20 node22 node18; do
-    if command -v "$cmd" &>/dev/null; then
-        ver=$("$cmd" --version 2>&1 | grep -oE '[0-9]+')
-        if [ "$ver" -ge 18 ]; then
-            NODE="$cmd"; found_node=true; ok "Node.js v$ver"
-            break
-        fi
+if command -v node &>/dev/null; then
+    ver=$(node --version 2>&1 | grep -oE '[0-9]+' | head -1)
+    if [ -n "$ver" ] && [ "$ver" -ge 18 ] 2>/dev/null; then
+        NODE="node"; found_node=true; ok "Node.js v$(node --version 2>&1 | grep -oE '[0-9.]+' | head -1)"
     fi
-done
+fi
 if ! $found_node; then
-    warn "Node.js 18+ not found — the web UI needs it to build."
-    answer=$(prompt "Install Node.js now? (Y/n)")
+    warn "Node.js 18+ not found"
+    answer=$(prompt "Install Node.js? (Y/n)")
     if [ "${answer:-y}" != "n" ] && [ "${answer:-y}" != "N" ]; then
         case "$OS" in
-            macos) brew install node || err "brew install node failed";;
+            macos) brew install node 2>/dev/null || err "brew install node failed";;
             linux)
-                curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - 2>/dev/null && sudo apt-get install -y nodejs 2>/dev/null || \
-                curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash - 2>/dev/null && sudo dnf install -y nodejs 2>/dev/null || \
-                err "Auto-install failed. Install Node from https://nodejs.org";;
+                curl -fsSL https://deb.nodesource.com/setup_22.x 2>/dev/null | sudo -E bash - 2>/dev/null && sudo apt-get install -y nodejs 2>/dev/null && ok "Node.js installed via apt" ||
+                { err "Auto-install failed. Install from https://nodejs.org"; };;
             windows) err "Install Node.js from https://nodejs.org (LTS version)";;
         esac
         NODE=$(command -v node 2>/dev/null || echo "")
-        [ -n "$NODE" ] && ok "Node.js installed" || warn "Node install may have failed. Try manually."
+        [ -n "$NODE" ] && ok "Node.js installed" || warn "Node.js may not have installed correctly"
+    else
+        warn "Skipping Node.js — web UI won't start without it"
     fi
 fi
 
@@ -145,7 +143,11 @@ cd "$INSTALL_DIR"
 # Step 3: Install dependencies
 # ─────────────────────────────────────────────
 section "Installing dependencies"
-$PYTHON -m pip install --quiet -r requirements.txt 2>&1 | tail -1
+if [ "$OS" = "macos" ]; then
+    $PYTHON -m pip install --quiet --break-system-packages -r requirements.txt 2>&1 | tail -1
+else
+    $PYTHON -m pip install --quiet -r requirements.txt 2>&1 | tail -1
+fi
 ok "Python packages"
 
 if [ -n "$NODE" ]; then
