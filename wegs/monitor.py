@@ -143,8 +143,8 @@ class PassProcessor:
             img_entries.append({
                 "type": img_type,
                 "label": label,
-                "image_path": rel_path,
-                "thumbnail_path": os.path.relpath(thumb_path, pass_path) if thumb_path else rel_path,
+                "image_path": rel_path.replace("\\", "/"),
+                "thumbnail_path": (os.path.relpath(thumb_path, pass_path) if thumb_path else rel_path).replace("\\", "/"),
             })
 
         # Timestamp
