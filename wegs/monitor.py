@@ -96,6 +96,39 @@ def generate_thumbnail(image_path, thumb_dir, width=400, quality=70):
         return None
 
 
+# ── Copy thumbnails to web/dist ──
+
+def _copy_to_web(pass_path, folder_name, img_entries):
+    """Copy thumbnails and images to web/dist/thumbs/ with unique names.
+    Updates img_entries in-place with web-accessible paths."""
+    try:
+        import shutil
+        wegs_dir = Path(__file__).parent.parent
+        web_thumbs = wegs_dir / "web" / "dist" / "thumbs"
+        web_thumbs.mkdir(parents=True, exist_ok=True)
+
+        for img in img_entries[:6]:
+            # Copy and rename thumbnail
+            thumb_src = os.path.join(pass_path, img["thumbnail_path"])
+            if os.path.exists(thumb_src):
+                unique = f"{folder_name}_{os.path.basename(thumb_src)}"
+                shutil.copy2(thumb_src, web_thumbs / unique)
+                img["thumbnail_path"] = f"thumbs/{unique}"
+            # Copy and rename full image
+            img_src = os.path.join(pass_path, img["image_path"])
+            if os.path.exists(img_src):
+                unique_i = f"{folder_name}_{os.path.basename(img_src)}"
+                shutil.copy2(img_src, web_thumbs / unique_i)
+                img["image_path"] = f"thumbs/{unique_i}"
+
+        # Also copy manifest
+        src_manifest = Path(config.get()["output_folder"]) / "manifest.json"
+        if src_manifest.exists():
+            shutil.copy2(src_manifest, wegs_dir / "web" / "dist" / "manifest.json")
+    except Exception as e:
+        print(f"    [!] Web copy error: {e}")
+
+
 # ── Main pass processor ──
 
 class PassProcessor:
@@ -150,6 +183,9 @@ class PassProcessor:
         # Timestamp
         dt_utc = self._extract_timestamp(folder_name)
 
+        # Copy thumbnails to web/dist BEFORE saving manifest (so paths are correct)
+        _copy_to_web(pass_path, folder_name, img_entries)
+
         # Manifest
         pass_data = {
             "satellite": sat,
@@ -161,34 +197,6 @@ class PassProcessor:
             "status": "completed",
         }
         manifest.add_pass(self.output, pass_data, img_entries)
-
-        # Copy manifest + thumbnails to web/dist for the local web UI
-        try:
-            wegs_dir = Path(__file__).parent.parent
-            web_dist = wegs_dir / "web" / "dist"
-            web_thumbs = web_dist / "thumbs"
-
-            # Copy manifest
-            import shutil
-            src_manifest = Path(self.output) / "manifest.json"
-            if src_manifest.exists():
-                shutil.copy2(src_manifest, web_dist / "manifest.json")
-
-            # Copy thumbnails to flat web/dist/thumbs/ (prefixed to avoid collisions)
-            web_thumbs.mkdir(parents=True, exist_ok=True)
-            for img in img_entries[:6]:
-                thumb_src = os.path.join(pass_path, img["thumbnail_path"])
-                if os.path.exists(thumb_src):
-                    unique_name = f"{folder_name}_{os.path.basename(thumb_src)}"
-                    shutil.copy2(thumb_src, web_thumbs / unique_name)
-                    img["thumbnail_path"] = f"thumbs/{unique_name}"
-                img_src = os.path.join(pass_path, img["image_path"])
-                if os.path.exists(img_src):
-                    unique_img = f"{folder_name}_{os.path.basename(img_src)}"
-                    shutil.copy2(img_src, web_thumbs / unique_img)
-                    img["image_path"] = f"thumbs/{unique_img}"
-        except Exception as e:
-            print(f"     Web copy error: {e}")
 
         # Telegram
         if self.tg:
