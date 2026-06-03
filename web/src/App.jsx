@@ -57,7 +57,7 @@ function App() {
       </div>
       <Footer
         stationName={stationName}
-        mapSrc={config.mapSrc || ''}
+        mapSrc={config.maps_embed_url || ''}
         githubUrl={config.githubUrl || 'https://github.com'}
       />
     </>

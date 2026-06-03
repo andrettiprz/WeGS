@@ -162,6 +162,33 @@ class PassProcessor:
         }
         manifest.add_pass(self.output, pass_data, img_entries)
 
+        # Copy manifest + thumbnails to web/dist for the local web UI
+        try:
+            wegs_dir = Path(__file__).parent.parent
+            web_dist = wegs_dir / "web" / "dist"
+            web_thumbs = web_dist / "thumbs" / folder_name
+
+            # Copy manifest
+            import shutil
+            src_manifest = Path(self.output) / "manifest.json"
+            if src_manifest.exists():
+                shutil.copy2(src_manifest, web_dist / "manifest.json")
+
+            # Copy first 3 thumbnails for preview
+            web_thumbs.parent.mkdir(parents=True, exist_ok=True)
+            web_thumbs.mkdir(parents=True, exist_ok=True)
+            for img in img_entries[:3]:
+                thumb_src = os.path.join(pass_path, img["thumbnail_path"])
+                if os.path.exists(thumb_src):
+                    shutil.copy2(thumb_src, web_thumbs / os.path.basename(thumb_src))
+            # Also copy the first 3 full images for detail view
+            for img in img_entries[:3]:
+                img_src = os.path.join(pass_path, img["image_path"])
+                if os.path.exists(img_src):
+                    shutil.copy2(img_src, web_thumbs / os.path.basename(img_src))
+        except Exception as e:
+            print(f"    ⚠️ Web copy error: {e}")
+
         # Telegram
         if self.tg:
             self.tg.send_message(

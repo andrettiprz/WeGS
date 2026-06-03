@@ -25,8 +25,14 @@ def wizard_full():
     print("── Station Information ────────────────────")
     cfg["station_name"] = _ask("Station name", cfg.get("station_name", "My Ground Station"))
     cfg["output_folder"] = _ask("SatDump output folder (where live_output is)", cfg.get("output_folder", ""))
-    cfg["maps_embed_url"] = _ask("Google Maps embed URL (Enter to skip)", cfg.get("maps_embed_url", ""),
-                                  optional=True)
+    raw_maps = _ask("Google Maps embed URL (Enter to skip)", cfg.get("maps_embed_url", ""), optional=True)
+    # If user pasted a full <iframe>, extract just the src URL
+    if raw_maps and "<iframe" in raw_maps:
+        import re
+        match = re.search(r'src="([^"]+)"', raw_maps)
+        if match:
+            raw_maps = match.group(1)
+    cfg["maps_embed_url"] = raw_maps if raw_maps else ""
     cfg["web_port"] = int(_ask("Web port", str(cfg.get("web_port", 5173))) or 5173)
     cfg["language"] = _ask("Language (en/es)", cfg.get("language", "en"))
 

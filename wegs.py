@@ -66,13 +66,35 @@ def main():
         print(HELP)
 
 
+def _find_existing_watchdog(folder):
+    """Check if another python process is running watchdogs on the same folder."""
+    import subprocess as _sp
+    try:
+        result = _sp.run(
+            ['wmic', 'process', 'where', 'name="python.exe"', 'get', 'commandline'],
+            capture_output=True, text=True, timeout=5
+        )
+        for line in result.stdout.split('\n'):
+            if 'watchdog' in line.lower() or 'manifest' in line.lower():
+                return True
+    except Exception:
+        pass
+    return False
+
+
 def _start():
     import wegs.config as cfg
     config = cfg.get()
     output = config.get("output_folder", "")
     if not output or not Path(output).exists():
-        print("⚠️  Output folder not set or not found. Run: wegs reconfigure")
+        print(f"⚠️  Output folder not set or not found. Run: wegs reconfigure")
         return
+
+    # Check for existing watchdog on same folder
+    if _find_existing_watchdog(output):
+        warn = input("  ⚠️  Another watchdog may be monitoring this folder. Continue? (y/N) ")
+        if warn.lower() != 'y':
+            return
 
     print("🛰️  Starting watchdog...")
     watchdog_proc = subprocess.Popen(
