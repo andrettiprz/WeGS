@@ -42,7 +42,7 @@ section "Checking dependencies"
 
 # ── Python ──
 found_python=false
-for cmd in python3.12 python3.11 python3.10 python3.9 python3.8 python3; do
+for cmd in python3 python python3.12 python3.11 python3.10 python3.9 python3.8; do
     if command -v "$cmd" &>/dev/null; then
         ver=$("$cmd" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+')
         major=$(echo "$ver" | cut -d. -f1)
