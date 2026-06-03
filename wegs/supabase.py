@@ -60,7 +60,7 @@ class SupabaseClient:
                 data = resp.json()
                 return data[0]["id"] if isinstance(data, list) else data.get("id")
         except Exception as e:
-            print(f"  ⚠️ Supabase DB error: {e}")
+            print(f"   Supabase DB error: {e}")
         return None
 
     def insert_image(self, pass_id, img_type, label, image_url, thumbnail_url=None):
@@ -71,7 +71,7 @@ class SupabaseClient:
         try:
             requests.post(f"{self.url}/rest/v1/pass_images", headers=headers, json=row, timeout=30)
         except Exception as e:
-            print(f"  ⚠️ Supabase image error: {e}")
+            print(f"   Supabase image error: {e}")
 
     def get_existing_folders(self):
         """Return set of folder_name values already in Supabase."""
@@ -130,4 +130,4 @@ def sync_passes():
                 if url:
                     sb.insert_image(pass_id, img["type"], img["label"], url)
             time.sleep(0.2)
-    print("  ✅ Sync complete")
+    print("   Sync complete")

@@ -21,7 +21,7 @@ class TelegramBot:
                 timeout=10,
             )
         except Exception as e:
-            print(f"  ⚠️ Telegram error: {e}")
+            print(f"   Telegram error: {e}")
 
     def send_photo(self, path, caption=""):
         try:
@@ -33,7 +33,7 @@ class TelegramBot:
                     timeout=60,
                 )
         except Exception as e:
-            print(f"  ⚠️ Telegram photo error: {e}")
+            print(f"   Telegram photo error: {e}")
 
     def send_album(self, media_list):
         """media_list: list of (path, caption) tuples."""
@@ -56,7 +56,7 @@ class TelegramBot:
                 timeout=120,
             )
         except Exception as e:
-            print(f"  ⚠️ Telegram album error: {e}")
+            print(f"   Telegram album error: {e}")
         finally:
             for f in files.values():
                 f.close()

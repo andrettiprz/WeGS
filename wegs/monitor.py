@@ -92,7 +92,7 @@ def generate_thumbnail(image_path, thumb_dir, width=400, quality=70):
         img.save(out_path, "JPEG", quality=quality)
         return out_path
     except Exception as e:
-        print(f"    ⚠️ Thumbnail error: {e}")
+        print(f"     Thumbnail error: {e}")
         return None
 
 
@@ -132,7 +132,7 @@ class PassProcessor:
         if not images:
             if self.tg:
                 self.tg.send_message(f"*PASS: {sat}* — No images detected.")
-            print(f"  ⏭️  No images — skipped")
+            print(f"  ⏭  No images — skipped")
             return
 
         # Thumbnails
@@ -187,7 +187,7 @@ class PassProcessor:
                 if os.path.exists(img_src):
                     shutil.copy2(img_src, web_thumbs / os.path.basename(img_src))
         except Exception as e:
-            print(f"    ⚠️ Web copy error: {e}")
+            print(f"     Web copy error: {e}")
 
         # Telegram
         if self.tg:
@@ -211,7 +211,7 @@ class PassProcessor:
         if self.sb:
             self._upload_supabase(pass_path, folder_name, sat, dt_utc, count_total, count_raw, count_filled, img_entries)
 
-        print(f"  ✅ {len(img_entries)} images — {count_total} PNGs")
+        print(f"  [OK] {len(img_entries)} images — {count_total} PNGs")
 
     def _collect_images(self, pass_path):
         results = []
@@ -269,7 +269,7 @@ class PassHandler(FileSystemEventHandler):
         sat = identify_satellite(name)
         sdr_info = self.cfg.get("sdr_map", {}).get(sat, {"sdr": "Unknown", "antenna": "Unknown"})
 
-        print(f"🛰️  AOS: {name}")
+        print(f"  AOS: {name}")
         if self.tg:
             self.tg.send_message(
                 f"*AOS DETECTED*\\n"
@@ -288,7 +288,7 @@ def run():
     cfg = config.get()
     output = cfg["output_folder"]
     if not output or not os.path.isdir(output):
-        print(f"❌ Output folder not found: {output}")
+        print(f"[X] Output folder not found: {output}")
         print("   Run: wegs reconfigure")
         return
 
@@ -296,8 +296,8 @@ def run():
     print("   WeGS Watchdog v1.0")
     print(f"   Station: {cfg['station_name']}")
     print(f"   Folder:  {output}")
-    print(f"   Telegram: {'✅' if cfg['telegram']['enabled'] else '❌'}")
-    print(f"   Supabase: {'✅' if cfg['supabase']['enabled'] else '❌'}")
+    print(f"   Telegram: {'[OK]' if cfg['telegram']['enabled'] else '[X]'}")
+    print(f"   Supabase: {'[OK]' if cfg['supabase']['enabled'] else '[X]'}")
     print("=" * 44)
 
     handler = PassHandler(cfg)
@@ -316,12 +316,12 @@ def run():
         for folder_name in existing:
             if not manifest.pass_exists(output, folder_name):
                 pass_path = os.path.join(output, folder_name)
-                print(f"🔄 Scanning existing: {folder_name}")
+                print(f" Scanning existing: {folder_name}")
                 try:
                     processor.process(pass_path)
                 except Exception as e:
-                    print(f"  ⚠️ Error scanning {folder_name}: {e}")
-        print(f"✅ Startup scan complete — {len(existing)} folders checked")
+                    print(f"   Error scanning {folder_name}: {e}")
+        print(f"[OK] Startup scan complete — {len(existing)} folders checked")
 
     _thr.Thread(target=_scan_existing, daemon=True).start()
 

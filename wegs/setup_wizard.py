@@ -58,13 +58,13 @@ def wizard_full():
     _save(cfg)
     print()
     print("── Done ──────────────────────────────────")
-    print(f"  ⚙️  Config saved to: {INSTALL_DIR / 'config.json'}")
-    print(f"  🛰️  Start:  wegs start")
-    print(f"  🌐 Web:     http://localhost:{cfg['web_port']}")
+    print(f"    Config saved to: {INSTALL_DIR / 'config.json'}")
+    print(f"    Start:  wegs start")
+    print(f"   Web:     http://localhost:{cfg['web_port']}")
     if cfg["telegram"]["enabled"]:
-        print(f"  📱 Telegram: configured")
+        print(f"   Telegram: configured")
     if cfg["supabase"]["enabled"]:
-        print(f"  ☁️  Supabase: configured")
+        print(f"    Supabase: configured")
     print()
 
 
@@ -89,9 +89,9 @@ def wizard_telegram(cfg=None):
 
     _save(cfg)
     if token and chat:
-        print("  ✅ Telegram configured!")
+        print("   Telegram configured!")
     else:
-        print("  ⚠️  Telegram disabled (missing token or chat ID)")
+        print("    Telegram disabled (missing token or chat ID)")
 
 
 def wizard_supabase(cfg=None):
@@ -120,10 +120,10 @@ def wizard_supabase(cfg=None):
             "bucket": bucket,
         })
         print()
-        print("  ✅ Supabase configured!")
+        print("   Supabase configured!")
     else:
         cfg["supabase"]["enabled"] = False
-        print("  ⚠️  Supabase disabled (missing URL or key)")
+        print("    Supabase disabled (missing URL or key)")
 
     _save(cfg)
 

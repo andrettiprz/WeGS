@@ -87,16 +87,16 @@ def _start():
     config = cfg.get()
     output = config.get("output_folder", "")
     if not output or not Path(output).exists():
-        print(f"⚠️  Output folder not set or not found. Run: wegs reconfigure")
+        print(f"[!]  Output folder not set or not found. Run: wegs reconfigure")
         return
 
     # Check for existing watchdog on same folder
     if _find_existing_watchdog(output):
-        warn = input("  ⚠️  Another watchdog may be monitoring this folder. Continue? (y/N) ")
+        warn = input("  [!]  Another watchdog may be monitoring this folder. Continue? (y/N) ")
         if warn.lower() != 'y':
             return
 
-    print("🛰️  Starting watchdog...")
+    print("[WATCHDOG] Starting...")
     watchdog_proc = subprocess.Popen(
         [sys.executable, "-m", "wegs.monitor"],
         cwd=str(INSTALL_DIR),
@@ -105,7 +105,7 @@ def _start():
     )
     print(f"   PID: {watchdog_proc.pid} — monitoring {output}")
 
-    print("🌐 Starting web server...")
+    print("[WEB] Starting...")
     web_port = config.get("web_port", 5173)
     web_proc = subprocess.Popen(
         [sys.executable, "-m", "http.server", str(web_port), "--directory", str(INSTALL_DIR / "web" / "dist")],
@@ -122,7 +122,7 @@ def _start():
         json.dump({"watchdog": watchdog_proc.pid, "web": web_proc.pid}, f)
 
     print()
-    print(f"✅ WeGS running — http://localhost:{config.get('web_port', 5173)}")
+    print(f"[OK] WeGS running — http://localhost:{config.get('web_port', 5173)}")
 
 
 def _stop():
@@ -134,13 +134,13 @@ def _stop():
         for name, pid in pids.items():
             try:
                 _os.kill(pid, signal.SIGTERM)
-                print(f"✓ Stopped {name} (PID {pid})")
+                print(f" Stopped {name} (PID {pid})")
             except ProcessLookupError:
                 print(f"  {name} was not running")
             except Exception as e:
                 print(f"  Error stopping {name}: {e}")
         pid_file.unlink(missing_ok=True)
-    print("✅ WeGS stopped")
+    print("[OK]  WeGS stopped")
 
 
 def _status():
@@ -160,13 +160,13 @@ def _status():
             pass_count = len(m.get("passes", []))
 
     print("── WeGS Status ────────────────────────────")
-    print(f"  Status:    {'🟢 Running' if running else '🔴 Stopped'}")
+    print(f"  Status:    {'[ON]  Running' if running else '[OFF]  Stopped'}")
     print(f"  Station:   {config.get('station_name', '?')}")
     print(f"  Folder:    {output or 'not set'}")
     print(f"  Passes:    {pass_count}")
     print(f"  Web:       http://localhost:{config.get('web_port', 5173)}")
-    print(f"  Telegram:  {'✅' if config['telegram']['enabled'] else '❌'}")
-    print(f"  Supabase:  {'✅' if config['supabase']['enabled'] else '❌'}")
+    print(f"  Telegram:  {'[OK] ' if config['telegram']['enabled'] else '[X] '}")
+    print(f"  Supabase:  {'[OK] ' if config['supabase']['enabled'] else '[X] '}")
 
 
 def _reconfigure():
@@ -194,7 +194,7 @@ def _update():
     subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "--quiet"])
     _os.chdir(INSTALL_DIR / "web")
     subprocess.run(["npm", "install", "--silent"])
-    print("✅ WeGS updated")
+    print("[OK]  WeGS updated")
 
 
 def _uninstall():
@@ -202,7 +202,7 @@ def _uninstall():
     import shutil
     home = Path.home()
     shutil.rmtree(home / ".wegs", ignore_errors=True)
-    print("✅ WeGS removed")
+    print("[OK]  WeGS removed")
     print(f"   To fully uninstall, delete: {INSTALL_DIR}")
 
 
