@@ -1,0 +1,4 @@
+pillow>=10.0
+watchdog>=4.0
+pytz>=2024.1
+requests>=2.31

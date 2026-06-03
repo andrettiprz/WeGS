@@ -1,0 +1,30 @@
+{
+    "station_name": "My Ground Station",
+    "output_folder": "",
+    "maps_embed_url": "",
+    "web_port": 5173,
+    "language": "en",
+    "accent_color": "#00c8ff",
+    "telegram": {
+        "enabled": false,
+        "bot_token": "",
+        "chat_id": ""
+    },
+    "supabase": {
+        "enabled": false,
+        "url": "",
+        "service_key": "",
+        "anon_key": "",
+        "bucket": "satellite-images"
+    },
+    "sdr_map": {
+        "METEOR M2-3": { "sdr": "RTL-SDR", "antenna": "V-Dipole" },
+        "METEOR M2-4": { "sdr": "RTL-SDR", "antenna": "V-Dipole" }
+    },
+    "processing": {
+        "wait_seconds": 1200,
+        "thumbnail_width": 400,
+        "thumbnail_quality": 70,
+        "timezone": "UTC"
+    }
+}

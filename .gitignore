@@ -1,0 +1,9 @@
+# WeGS
+node_modules/
+dist/
+.env
+config.json
+__pycache__/
+*.pyc
+.wegs/
+.vite/
