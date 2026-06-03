@@ -98,7 +98,7 @@ def _start():
 
     print("🛰️  Starting watchdog...")
     watchdog_proc = subprocess.Popen(
-        [sys.executable, str(INSTALL_DIR / "wegs" / "watchdog.py")],
+        [sys.executable, str(INSTALL_DIR / "wegs" / "monitor.py")],
         cwd=output,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
