@@ -166,7 +166,7 @@ class PassProcessor:
         try:
             wegs_dir = Path(__file__).parent.parent
             web_dist = wegs_dir / "web" / "dist"
-            web_thumbs = web_dist / "thumbs" / folder_name
+            web_thumbs = web_dist / "thumbs"
 
             # Copy manifest
             import shutil
@@ -174,18 +174,19 @@ class PassProcessor:
             if src_manifest.exists():
                 shutil.copy2(src_manifest, web_dist / "manifest.json")
 
-            # Copy first 3 thumbnails for preview
-            web_thumbs.parent.mkdir(parents=True, exist_ok=True)
+            # Copy thumbnails to flat web/dist/thumbs/ (prefixed to avoid collisions)
             web_thumbs.mkdir(parents=True, exist_ok=True)
-            for img in img_entries[:3]:
+            for img in img_entries[:6]:
                 thumb_src = os.path.join(pass_path, img["thumbnail_path"])
                 if os.path.exists(thumb_src):
-                    shutil.copy2(thumb_src, web_thumbs / os.path.basename(thumb_src))
-            # Also copy the first 3 full images for detail view
-            for img in img_entries[:3]:
+                    unique_name = f"{folder_name}_{os.path.basename(thumb_src)}"
+                    shutil.copy2(thumb_src, web_thumbs / unique_name)
+                    img["thumbnail_path"] = f"thumbs/{unique_name}"
                 img_src = os.path.join(pass_path, img["image_path"])
                 if os.path.exists(img_src):
-                    shutil.copy2(img_src, web_thumbs / os.path.basename(img_src))
+                    unique_img = f"{folder_name}_{os.path.basename(img_src)}"
+                    shutil.copy2(img_src, web_thumbs / unique_img)
+                    img["image_path"] = f"thumbs/{unique_img}"
         except Exception as e:
             print(f"     Web copy error: {e}")
 
