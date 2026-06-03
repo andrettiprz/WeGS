@@ -1,9 +1,9 @@
 # WeGS
 node_modules/
-dist/
 .env
 config.json
 __pycache__/
 *.pyc
 .wegs/
 .vite/
+# Keep web/dist for offline serving

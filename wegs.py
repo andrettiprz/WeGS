@@ -84,14 +84,14 @@ def _start():
     print(f"   PID: {watchdog_proc.pid} — monitoring {output}")
 
     print("🌐 Starting web server...")
+    web_port = config.get("web_port", 5173)
     web_proc = subprocess.Popen(
-        ["npm", "run", "dev", "--", "--port", str(config.get("web_port", 5173))],
-        cwd=str(INSTALL_DIR / "web"),
+        [sys.executable, "-m", "http.server", str(web_port), "--directory", str(INSTALL_DIR / "web" / "dist")],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    time.sleep(2)
-    print(f"   http://localhost:{config.get('web_port', 5173)}")
+    time.sleep(1)
+    print(f"   http://localhost:{web_port}")
 
     # Save PIDs
     pid_file = Path.home() / ".wegs" / "pids.json"
