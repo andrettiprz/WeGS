@@ -140,14 +140,33 @@ ok "Auto-start configured"
 schtasks /Run /TN "WeGS_Startup" 2>$null | Out-Null
 ok "Services started"
 
+# Start services now (directly, not via schtasks)
+Write-Host "  Starting services..."
+$proc1 = Start-Process python -ArgumentList "-m","http.server","5173","--directory","web\dist" -WorkingDirectory $InstallDir -PassThru -WindowStyle Hidden
+$proc2 = Start-Process python -ArgumentList "-m","wegs.monitor" -WorkingDirectory $InstallDir -PassThru -WindowStyle Hidden
+ok "Services started (PID $($proc1.Id), $($proc2.Id))"
+
 # ── Desktop shortcut ──
+Start-Sleep -Seconds 2
 $desktopContent = "@echo off`nstart http://localhost:5173`nexit"
 Set-Content -Path "$env:USERPROFILE\Desktop\Start_WeGS.bat" -Value $desktopContent
 ok "Desktop shortcut created"
 
-# ── Open browser ──
-Start-Sleep -Seconds 3
-Start-Process "http://localhost:5173"
+# ── Wait for web server and open browser ──
+Write-Host "  Waiting for web server..."
+$retries = 0
+do {
+    Start-Sleep -Seconds 2
+    $retries++
+    try { $status = (Invoke-WebRequest http://localhost:5173 -UseBasicParsing -TimeoutSec 2).StatusCode } catch { $status = 0 }
+} while ($status -ne 200 -and $retries -lt 10)
+
+if ($status -eq 200) {
+    Start-Process "http://localhost:5173"
+    ok "Browser opened to localhost:5173"
+} else {
+    warn "Web server not responding. Double-click Start_WeGS.bat on Desktop"
+}
 
 # ── Done ──
 Write-Host ""
