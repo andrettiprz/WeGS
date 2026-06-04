@@ -118,15 +118,48 @@ if ($node) {
 Write-Host ""
 python wegs/setup_wizard.py
 
+# ── Create auto-start services ──
+Write-Host ""
+Write-Host "── Setting up auto-start ──────────────────" -ForegroundColor Cyan
+$batContent = @"
+@echo off
+cd /d $InstallDir
+start "" python -m http.server 5173 --directory web\dist
+start "" python -m wegs.monitor
+timeout /T 31536000 /NOBREAK >nul
+exit
+"@
+Set-Content -Path "$InstallDir\start_services.bat" -Value $batContent
+ok "Service script created"
+
+# Create scheduled task for auto-start on boot
+schtasks /Create /SC ONSTART /TN "WeGS_Startup" /TR "$InstallDir\start_services.bat" /F 2>$null | Out-Null
+ok "Auto-start configured"
+
+# Start services now
+schtasks /Run /TN "WeGS_Startup" 2>$null | Out-Null
+ok "Services started"
+
+# ── Desktop shortcut ──
+$desktopContent = "@echo off`nstart http://localhost:5173`nexit"
+Set-Content -Path "$env:USERPROFILE\Desktop\Start_WeGS.bat" -Value $desktopContent
+ok "Desktop shortcut created"
+
+# ── Open browser ──
+Start-Sleep -Seconds 3
+Start-Process "http://localhost:5173"
+
 # ── Done ──
 Write-Host ""
 Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║        ✅  WeGS is installed!            ║" -ForegroundColor Green
+Write-Host "║        ✅  WeGS is running!              ║" -ForegroundColor Green
 Write-Host "╠══════════════════════════════════════════╣" -ForegroundColor Green
 Write-Host "║                                          ║" -ForegroundColor Green
-Write-Host "║   Start:  cd $InstallDir                 ║" -ForegroundColor Green
-Write-Host "║           python wegs.py start           ║" -ForegroundColor Green
-Write-Host "║   Web:    http://localhost:5173          ║" -ForegroundColor Green
+Write-Host "║   🌐  http://localhost:5173              ║" -ForegroundColor Green
+Write-Host "║   🖥️  Desktop: Start_WeGS.bat            ║" -ForegroundColor Green
+Write-Host "║   ⚙️  Config: $InstallDir\config.json    ║" -ForegroundColor Green
 Write-Host "║                                          ║" -ForegroundColor Green
+Write-Host "║   Auto-starts with Windows               ║" -ForegroundColor Green
+Write-Host "║   wegs add telegram | supabase | deploy  ║" -ForegroundColor Green
 Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""
