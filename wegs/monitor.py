@@ -45,7 +45,7 @@ def count_pngs(folder):
     if not os.path.isdir(folder):
         return 0
     for root, dirs, files in os.walk(folder):
-        c += sum(1 for f in files if f.lower().endswith(".png"))
+        c += sum(1 for f in files if f.lower().endswith(".png") and os.path.getsize(os.path.join(root, f)) > 0)
     return c
 
 
@@ -229,6 +229,8 @@ class PassProcessor:
                 if not fname.lower().endswith(".png"):
                     continue
                 abs_path = os.path.join(root, fname)
+                if os.path.getsize(abs_path) == 0:
+                    continue
                 rel_path = os.path.relpath(abs_path, pass_path)
                 img_type, label = classify_image(rel_path, fname)
                 if img_type:
