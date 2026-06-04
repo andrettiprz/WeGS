@@ -111,13 +111,13 @@ def _copy_to_web(pass_path, folder_name, img_entries):
             # Copy and rename thumbnail
             thumb_src = os.path.join(pass_path, img["thumbnail_path"])
             if os.path.exists(thumb_src):
-                unique = f"{folder_name}_{os.path.basename(thumb_src)}"
+                unique = f"{folder_name}_{os.path.basename(thumb_src)}".replace(" ", "_")
                 shutil.copy2(thumb_src, web_thumbs / unique)
                 img["thumbnail_path"] = f"thumbs/{unique}"
             # Copy and rename full image
             img_src = os.path.join(pass_path, img["image_path"])
             if os.path.exists(img_src):
-                unique_i = f"{folder_name}_{os.path.basename(img_src)}"
+                unique_i = f"{folder_name}_{os.path.basename(img_src)}".replace(" ", "_")
                 shutil.copy2(img_src, web_thumbs / unique_i)
                 img["image_path"] = f"thumbs/{unique_i}"
 
