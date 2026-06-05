@@ -152,9 +152,24 @@ def _uninstall():
     print("Removing WeGS...")
     _stop()
 
-    import shutil
+    # Remove from PATH
     home = Path.home()
     wegs_dir = home / ".wegs"
+    try:
+        import subprocess
+        user_path = subprocess.run(
+            ["powershell", "-Command", "[Environment]::GetEnvironmentVariable('Path','User')"],
+            capture_output=True, text=True
+        ).stdout.strip()
+        new_path = ";".join(p for p in user_path.split(";") if str(wegs_dir) not in p)
+        subprocess.run(
+            ["powershell", "-Command", f"[Environment]::SetEnvironmentVariable('Path','{new_path}','User')"],
+            capture_output=True
+        )
+    except:
+        pass
+
+    import shutil
     if wegs_dir.exists():
         shutil.rmtree(wegs_dir, ignore_errors=True)
 

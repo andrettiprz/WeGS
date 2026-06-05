@@ -47,6 +47,18 @@ python wegs/setup_wizard.py
 
 # Done
 Write-Host ""
+
+# Make 'wegs' available globally (Windows PATH)
+$batPath = "$InstallDir\wegs.bat"
+Set-Content -Path $batPath -Value "@echo off`npython `"$InstallDir\wegs.py`" %*"
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($userPath -notlike "*$InstallDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$userPath;$InstallDir", "User")
+    $env:Path += ";$InstallDir"
+    Write-Host "  OK Added to PATH" -ForegroundColor Green
+}
+
+Write-Host ""
 Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Green
 Write-Host "║        WeGS is ready!                    ║" -ForegroundColor Green
 Write-Host "╠══════════════════════════════════════════╣" -ForegroundColor Green
@@ -57,5 +69,6 @@ Write-Host "║  wegs stop        Stop server            ║" -ForegroundColor G
 Write-Host "║  wegs status      Show status            ║" -ForegroundColor Green
 Write-Host "║  wegs uninstall   Remove WeGS            ║" -ForegroundColor Green
 Write-Host "║                                          ║" -ForegroundColor Green
+Write-Host "║  Restart terminal to use 'wegs' command  ║" -ForegroundColor Yellow
 Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""
