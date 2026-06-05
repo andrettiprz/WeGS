@@ -1,38 +1,33 @@
 #!/usr/bin/env python3
 """
-WeGS CLI — manages the ground station web visualizer.
+WeGS CLI — Ground Station Web Visualizer.
 
 Usage:
-    wegs start              Start all services
-    wegs stop               Stop all services
-    wegs status             Show system status
-    wegs reconfigure        Re-run setup wizard
-    wegs add <feature>      Add optional features (telegram, supabase, deploy)
-    wegs sync               Sync pending passes to Supabase
-    wegs update             Update to latest version
-    wegs uninstall          Remove WeGS
+    wegs start       Start the server + monitor
+    wegs dashboard   Open web UI in browser
+    wegs stop        Stop the server
+    wegs status      Show system info
+    wegs reconfigure Re-run setup wizard
+    wegs uninstall   Remove WeGS completely
 """
 import sys
-import subprocess
+import os
 import json
-import time
+import signal
+import webbrowser
 from pathlib import Path
 
 INSTALL_DIR = Path(__file__).parent.resolve()
+PID_FILE = Path.home() / ".wegs" / "wegs.pid"
 
 HELP = """WeGS — Ground Station Web Visualizer v1.0
 
-  wegs start            Start watchdog + web server
-  wegs stop             Stop all services
-  wegs status           Show system status
-  wegs reconfigure      Re-run the setup wizard
-  wegs add telegram     Set up Telegram bot notifications
-  wegs add supabase     Set up cloud publishing
-  wegs add deploy       Deploy web UI to Vercel
-  wegs sync             Upload pending passes to Supabase
-  wegs update           Update WeGS to latest version
-  wegs uninstall        Remove WeGS completely
-"""
+  wegs start        Start server + monitor
+  wegs dashboard    Open http://localhost:5173
+  wegs stop         Stop all services
+  wegs status       Show system status
+  wegs reconfigure  Re-run setup wizard
+  wegs uninstall    Remove WeGS completely"""
 
 
 def main():
@@ -41,169 +36,136 @@ def main():
         return
 
     cmd = sys.argv[1].lower()
-    sub = sys.argv[2] if len(sys.argv) > 2 else ""
 
-    if cmd == "start":
+    if cmd in ("-h", "--help", "help"):
+        print(HELP)
+    elif cmd == "start":
         _start()
+    elif cmd == "dashboard":
+        _dashboard()
     elif cmd == "stop":
         _stop()
     elif cmd == "status":
         _status()
     elif cmd == "reconfigure":
         _reconfigure()
-    elif cmd == "add":
-        _add(sub)
-    elif cmd == "sync":
-        _sync()
-    elif cmd == "update":
-        _update()
     elif cmd == "uninstall":
         _uninstall()
-    elif cmd in ("-h", "--help", "help"):
-        print(HELP)
     else:
         print(f"Unknown command: {cmd}")
         print(HELP)
-
-
-def _find_existing_watchdog(folder):
-    """Check if another python process is running watchdogs on the same folder."""
-    import subprocess as _sp
-    try:
-        result = _sp.run(
-            ['wmic', 'process', 'where', 'name="python.exe"', 'get', 'commandline'],
-            capture_output=True, text=True, timeout=5
-        )
-        for line in result.stdout.split('\n'):
-            if 'watchdog' in line.lower() or 'manifest' in line.lower():
-                return True
-    except Exception:
-        pass
-    return False
 
 
 def _start():
     import wegs.config as cfg
     config = cfg.get()
     output = config.get("output_folder", "")
+    port = config.get("web_port", 5173)
+
     if not output or not Path(output).exists():
-        print(f"[!]  Output folder not set or not found. Run: wegs reconfigure")
+        print(f"[!] Output folder not set. Run: wegs reconfigure")
         return
 
-    # Check for existing watchdog on same folder
-    if _find_existing_watchdog(output):
-        warn = input("  [!]  Another watchdog may be monitoring this folder. Continue? (y/N) ")
-        if warn.lower() != 'y':
-            return
-
-    print("[WATCHDOG] Starting...")
-    watchdog_proc = subprocess.Popen(
-        [sys.executable, "-m", "wegs.monitor"],
-        cwd=str(INSTALL_DIR),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    print(f"   PID: {watchdog_proc.pid} — monitoring {output}")
-
-    print("[WEB] Starting...")
-    web_port = config.get("web_port", 5173)
-    web_proc = subprocess.Popen(
-        [sys.executable, "-m", "http.server", str(web_port), "--directory", str(INSTALL_DIR / "web" / "dist")],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    time.sleep(1)
-    print(f"   http://localhost:{web_port}")
-
-    # Save PIDs
-    pid_file = Path.home() / ".wegs" / "pids.json"
-    pid_file.parent.mkdir(parents=True, exist_ok=True)
-    with open(pid_file, "w") as f:
-        json.dump({"watchdog": watchdog_proc.pid, "web": web_proc.pid}, f)
-
+    print(f"WeGS — {config['station_name']}")
+    print(f"   Starting on http://localhost:{port}")
     print()
-    print(f"[OK] WeGS running — http://localhost:{config.get('web_port', 5173)}")
+
+    if PID_FILE.exists():
+        print("[!] WeGS appears to be running already. Run: wegs stop")
+        return
+
+    from wegs.serve import run_serve
+    run_serve(output, port)
+
+
+def _dashboard():
+    _load_config()
+    port = _load_config().get("web_port", 5173)
+    url = f"http://localhost:{port}"
+    print(f"Opening {url}...")
+    webbrowser.open(url)
 
 
 def _stop():
-    pid_file = Path.home() / ".wegs" / "pids.json"
-    if pid_file.exists():
-        with open(pid_file) as f:
-            pids = json.load(f)
-        import signal, os as _os
-        for name, pid in pids.items():
+    if PID_FILE.exists():
+        with open(PID_FILE) as f:
+            pid = json.load(f).get("pid")
+        if pid:
             try:
-                _os.kill(pid, signal.SIGTERM)
-                print(f" Stopped {name} (PID {pid})")
+                os.kill(pid, signal.SIGTERM)
+                print(f"Stopped (PID {pid})")
             except ProcessLookupError:
-                print(f"  {name} was not running")
+                print("Was not running")
             except Exception as e:
-                print(f"  Error stopping {name}: {e}")
-        pid_file.unlink(missing_ok=True)
-    print("[OK]  WeGS stopped")
+                print(f"Error: {e}")
+        PID_FILE.unlink(missing_ok=True)
+    else:
+        # Try to find and kill python processes on the port
+        import subprocess
+        config = _load_config()
+        port = config.get("web_port", 5173)
+        try:
+            result = subprocess.run(
+                ["netstat", "-ano"], capture_output=True, text=True, timeout=5
+            )
+            for line in result.stdout.split("\n"):
+                if f":{port}" in line and "LISTENING" in line:
+                    parts = line.split()
+                    pid = int(parts[-1])
+                    try:
+                        os.kill(pid, signal.SIGTERM)
+                        print(f"Stopped (PID {pid})")
+                    except:
+                        pass
+        except:
+            pass
+    print("WeGS stopped")
 
 
 def _status():
-    import wegs.config as cfg
-    config = cfg.get()
+    config = _load_config()
+    output = config.get("output_folder", "")
+    port = config.get("web_port", 5173)
 
-    pid_file = Path.home() / ".wegs" / "pids.json"
-    running = pid_file.exists()
+    print(f"Station:  {config['station_name']}")
+    print(f"Folder:   {output}")
+    print(f"Web:      http://localhost:{port}")
+    print(f"Telegram: {'on' if config['telegram']['enabled'] else 'off'}")
+    print(f"Supabase: {'on' if config['supabase']['enabled'] else 'off'}")
 
     # Count passes
-    output = config.get("output_folder", "")
-    pass_count = 0
     manifest_path = Path(output) / "manifest.json"
     if manifest_path.exists():
         with open(manifest_path) as f:
             m = json.load(f)
-            pass_count = len(m.get("passes", []))
-
-    print("── WeGS Status ────────────────────────────")
-    print(f"  Status:    {'[ON]  Running' if running else '[OFF]  Stopped'}")
-    print(f"  Station:   {config.get('station_name', '?')}")
-    print(f"  Folder:    {output or 'not set'}")
-    print(f"  Passes:    {pass_count}")
-    print(f"  Web:       http://localhost:{config.get('web_port', 5173)}")
-    print(f"  Telegram:  {'[OK] ' if config['telegram']['enabled'] else '[X] '}")
-    print(f"  Supabase:  {'[OK] ' if config['supabase']['enabled'] else '[X] '}")
+        print(f"Passes:   {len(m.get('passes', []))}")
+    else:
+        print("Passes:   no manifest yet")
 
 
 def _reconfigure():
+    import subprocess
     subprocess.run([sys.executable, str(INSTALL_DIR / "wegs" / "setup_wizard.py")])
 
 
-def _add(feature):
-    wizard = INSTALL_DIR / "wegs" / "setup_wizard.py"
-    if feature in ("telegram", "supabase", "deploy"):
-        subprocess.run([sys.executable, str(wizard), f"--{feature}"])
-    else:
-        print(f"Unknown feature: {feature}")
-        print("Available: wegs add telegram | supabase | deploy")
-
-
-def _sync():
-    from wegs.supabase import sync_passes
-    sync_passes()
-
-
-def _update():
-    import os as _os
-    _os.chdir(INSTALL_DIR)
-    subprocess.run(["git", "pull", "origin", "main"])
-    subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "--quiet"])
-    _os.chdir(INSTALL_DIR / "web")
-    subprocess.run(["npm", "install", "--silent"])
-    print("[OK]  WeGS updated")
-
-
 def _uninstall():
+    print("Removing WeGS...")
     _stop()
+
     import shutil
     home = Path.home()
-    shutil.rmtree(home / ".wegs", ignore_errors=True)
-    print("[OK]  WeGS removed")
-    print(f"   To fully uninstall, delete: {INSTALL_DIR}")
+    wegs_dir = home / ".wegs"
+    if wegs_dir.exists():
+        shutil.rmtree(wegs_dir, ignore_errors=True)
+
+    print("WeGS removed.")
+    print(f"   The source code is still at: {INSTALL_DIR}")
+    print(f"   Delete this folder manually to fully uninstall.")
+
+
+def _load_config():
+    import wegs.config as cfg
+    return cfg.get()
 
 
 if __name__ == "__main__":
