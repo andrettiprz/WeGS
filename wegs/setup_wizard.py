@@ -1,5 +1,5 @@
 """
-Setup wizard — interactive configuration for WeGS.
+Setup wizard  interactive configuration for WeGS.
 Run standalone: python wegs/setup_wizard.py
 Run for specific feature: python wegs/setup_wizard.py --telegram
 """
@@ -13,16 +13,16 @@ INSTALL_DIR = Path(__file__).parent.parent
 def wizard_full():
     """Run the full setup wizard."""
     print()
-    print("╔══════════════════════════════════════════╗")
-    print("║         WeGS v1.0 Setup                  ║")
-    print("║   Ground Station Web Visualizer         ║")
-    print("╚══════════════════════════════════════════╝")
+    print("")
+    print("         WeGS v1.0 Setup                  ")
+    print("   Ground Station Web Visualizer         ")
+    print("")
     print()
 
     cfg = _load_existing()
 
-    # ── Station ──
-    print("── Station Information ────────────────────")
+    #  Station 
+    print(" Station Information ")
     cfg["station_name"] = _ask("Station name", cfg.get("station_name", "My Ground Station"))
     cfg["output_folder"] = _ask("SatDump output folder (where live_output is)", cfg.get("output_folder", ""))
     raw_maps = _ask("Google Maps embed URL (Enter to skip)", cfg.get("maps_embed_url", ""), optional=True)
@@ -36,28 +36,28 @@ def wizard_full():
     cfg["web_port"] = int(_ask("Web port", str(cfg.get("web_port", 5173))) or 5173)
     cfg["language"] = _ask("Language (en/es)", cfg.get("language", "en"))
 
-    # ── Telegram ──
+    #  Telegram 
     print()
-    print("── Telegram (optional) ───────────────────")
+    print(" Telegram (optional) ")
     use_tg = _ask("Set up Telegram notifications? (y/N)", "n").lower()
     if use_tg == "y":
         wizard_telegram(cfg)
     else:
         cfg["telegram"]["enabled"] = False
 
-    # ── Supabase ──
+    #  Supabase 
     print()
-    print("── Supabase Cloud (optional) ─────────────")
+    print(" Supabase Cloud (optional) ")
     use_sb = _ask("Set up Supabase cloud publishing? (y/N)", "n").lower()
     if use_sb == "y":
         wizard_supabase(cfg)
     else:
         cfg["supabase"]["enabled"] = False
 
-    # ── Save ──
+    #  Save 
     _save(cfg)
     print()
-    print("── Done ──────────────────────────────────")
+    print(" Done ")
     print(f"    Config saved to: {INSTALL_DIR / 'config.json'}")
     print(f"    Start:  wegs start")
     print(f"   Web:     http://localhost:{cfg['web_port']}")
@@ -74,7 +74,7 @@ def wizard_telegram(cfg=None):
         cfg = _load_existing()
 
     print()
-    print("  ── Telegram Setup ──")
+    print("   Telegram Setup ")
     print("  1. Open Telegram and message @BotFather")
     print("  2. Send /newbot and follow instructions")
     print("  3. Copy the bot token you receive")
@@ -100,9 +100,9 @@ def wizard_supabase(cfg=None):
         cfg = _load_existing()
 
     print()
-    print("  ── Supabase Setup ──")
+    print("   Supabase Setup ")
     print("  1. Go to https://supabase.com and create a free project")
-    print("  2. Go to Project Settings → API")
+    print("  2. Go to Project Settings  API")
     print("  3. Copy your Project URL and keys")
     print()
 
@@ -131,7 +131,7 @@ def wizard_supabase(cfg=None):
 def wizard_deploy(cfg=None):
     """Guide for deploying web UI."""
     print()
-    print("  ── Deploy Web UI ──")
+    print("   Deploy Web UI ")
     print()
     print("  Option 1: Vercel (recommended, free)")
     print("    1. Go to https://vercel.com and sign up")
@@ -147,7 +147,7 @@ def wizard_deploy(cfg=None):
     print()
 
 
-# ── Helpers ──
+#  Helpers 
 
 def _ask(prompt, default="", optional=False):
     """Ask a question, return answer or default."""

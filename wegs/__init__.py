@@ -1,5 +1,5 @@
 """
-WeGS — Ground Station Web Visualizer
+WeGS  Ground Station Web Visualizer
 ======================================
 
 Local-first pipeline that monitors satellite image folders,

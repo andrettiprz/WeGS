@@ -1,5 +1,5 @@
 """
-WeGS Watchdog — monitors SatDump output folders.
+WeGS Watchdog  monitors SatDump output folders.
 Generates thumbnails, HDR headers, and maintains the local manifest.
 Optionally sends Telegram notifications and syncs to Supabase.
 """
@@ -24,7 +24,7 @@ from . import manifest
 from .telegram import TelegramBot
 from .supabase import SupabaseClient
 
-# ── Helper: identify satellite from folder name ──
+#  Helper: identify satellite from folder name 
 
 def identify_satellite(name):
     n = name.lower()
@@ -38,7 +38,7 @@ def identify_satellite(name):
     return "UNKNOWN"
 
 
-# ── Helper: count PNGs recursively ──
+#  Helper: count PNGs recursively 
 
 def count_pngs(folder):
     c = 0
@@ -49,7 +49,7 @@ def count_pngs(folder):
     return c
 
 
-# ── Helper: classify image ──
+#  Helper: classify image 
 
 def classify_image(rel_path, filename):
     path = rel_path.replace("\\", "/").lower()
@@ -74,7 +74,7 @@ def classify_image(rel_path, filename):
     return ("RAW", filename)
 
 
-# ── Thumbnail generation ──
+#  Thumbnail generation 
 
 def generate_thumbnail(image_path, thumb_dir, width=400, quality=70):
     """Generate a JPEG thumbnail, save to thumb_dir. Returns path or None."""
@@ -96,7 +96,7 @@ def generate_thumbnail(image_path, thumb_dir, width=400, quality=70):
         return None
 
 
-# ── Main pass processor ──
+#  Main pass processor 
 
 class PassProcessor:
     def __init__(self, cfg):
@@ -116,7 +116,7 @@ class PassProcessor:
         sat = identify_satellite(folder_name)
         sdr_info = self.sdr_map.get(sat, {"sdr": "Unknown", "antenna": "Unknown"})
 
-        print(f"⏳ Processing {folder_name}... waiting {self.wait}s")
+        print(f" Processing {folder_name}... waiting {self.wait}s")
         time.sleep(self.wait)
 
         # Count
@@ -131,11 +131,11 @@ class PassProcessor:
 
         if not images:
             if self.tg:
-                self.tg.send_message(f"*PASS: {sat}* — No images detected.")
-            print(f"  ⏭  No images — skipped")
+                self.tg.send_message(f"*PASS: {sat}*  No images detected.")
+            print(f"    No images  skipped")
             return
 
-        # Collect images (no thumbnails — original PNGs served directly)
+        # Collect images (no thumbnails  original PNGs served directly)
         img_entries = []
         for abs_path, rel_path, img_type, label in images:
             img_entries.append({
@@ -147,7 +147,7 @@ class PassProcessor:
         # Timestamp
         dt_utc = self._extract_timestamp(folder_name)
 
-        # Manifest — save in output folder only (server serves from there)
+        # Manifest  save in output folder only (server serves from there)
         pass_data = {
             "satellite": sat,
             "timestamp": dt_utc.isoformat() if dt_utc else datetime.datetime.utcnow().isoformat(),
@@ -170,7 +170,7 @@ class PassProcessor:
             report = (
                 f"*Report: {sat}*\\n"
                 f"Receiver: {sdr_info['sdr']}\\n"
-                f"────────────\\n"
+                f"\\n"
                 f"RAW: {count_raw} | Filled: {count_filled}\\n"
                 f"Total files: {count_total}\\n"
                 f"Processing complete."
@@ -181,7 +181,7 @@ class PassProcessor:
         if self.sb:
             self._upload_supabase(pass_path, folder_name, sat, dt_utc, count_total, count_raw, count_filled, img_entries)
 
-        print(f"  [OK] {len(img_entries)} images — {count_total} PNGs")
+        print(f"  [OK] {len(img_entries)} images  {count_total} PNGs")
 
     def _collect_images(self, pass_path):
         results = []
@@ -222,7 +222,7 @@ class PassProcessor:
                 time.sleep(0.2)
 
 
-# ── Filesystem event handler ──
+#  Filesystem event handler 
 
 class PassHandler(FileSystemEventHandler):
     def __init__(self, cfg):
@@ -254,7 +254,7 @@ class PassHandler(FileSystemEventHandler):
         t.start()
 
 
-# ── Main entry point ──
+#  Main entry point 
 
 def run():
     cfg = config.get()
@@ -293,7 +293,7 @@ def run():
                     processor.process(pass_path)
                 except Exception as e:
                     print(f"   Error scanning {folder_name}: {e}")
-        print(f"[OK] Startup scan complete — {len(existing)} folders checked")
+        print(f"[OK] Startup scan complete  {len(existing)} folders checked")
 
     _thr.Thread(target=_scan_existing, daemon=True).start()
 

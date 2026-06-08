@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-WeGS Server — single process that serves the SPA, output files,
+WeGS Server  single process that serves the SPA, output files,
 and runs the file monitor. No file copying. No external deps.
 """
 import os
@@ -27,7 +27,7 @@ class WeGSHandler(SimpleHTTPRequestHandler):
         path = path.split("?", 1)[0].split("#", 1)[0]
         path = path.lstrip("/")
 
-        # SPA routes → index.html
+        # SPA routes  index.html
         if not path or path == "index.html":
             return str(INSTALL_DIR / "web" / "dist" / "index.html")
 
@@ -43,7 +43,7 @@ class WeGSHandler(SimpleHTTPRequestHandler):
         if spa.exists():
             return str(spa)
 
-        # SPA fallback — React Router
+        # SPA fallback  React Router
         if "." not in Path(path).suffix and path != "favicon.ico":
             return str(INSTALL_DIR / "web" / "dist" / "index.html")
 

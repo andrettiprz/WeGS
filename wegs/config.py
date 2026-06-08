@@ -1,5 +1,5 @@
 """
-WeGS Configuration — reads/writes config.json.
+WeGS Configuration  reads/writes config.json.
 """
 import json
 import os

@@ -1,5 +1,5 @@
 """
-Telegram integration — optional bot for satellite pass notifications.
+Telegram integration  optional bot for satellite pass notifications.
 """
 import time
 import requests

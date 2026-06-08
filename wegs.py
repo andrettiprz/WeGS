@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-WeGS CLI — Ground Station Web Visualizer.
+WeGS CLI  Ground Station Web Visualizer.
 
 Usage:
     wegs start       Start the server + monitor
@@ -20,7 +20,7 @@ from pathlib import Path
 INSTALL_DIR = Path(__file__).parent.resolve()
 PID_FILE = Path.home() / ".wegs" / "wegs.pid"
 
-HELP = """WeGS — Ground Station Web Visualizer v1.0
+HELP = """WeGS  Ground Station Web Visualizer v1.0
 
   wegs start        Start server + monitor
   wegs dashboard    Open http://localhost:5173
@@ -66,7 +66,7 @@ def _start():
         print(f"[!] Output folder not set. Run: wegs reconfigure")
         return
 
-    print(f"WeGS — {config['station_name']}")
+    print(f"WeGS  {config['station_name']}")
     print(f"   Starting on http://localhost:{port}")
     print()
 

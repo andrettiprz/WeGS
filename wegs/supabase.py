@@ -1,5 +1,5 @@
 """
-Supabase integration — optional cloud publishing backend.
+Supabase integration  optional cloud publishing backend.
 """
 import time
 import requests

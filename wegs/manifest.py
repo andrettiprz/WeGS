@@ -1,5 +1,5 @@
 """
-Manifest — reads/writes the local pass index (manifest.json).
+Manifest  reads/writes the local pass index (manifest.json).
 No database required. No external dependencies.
 """
 import json
