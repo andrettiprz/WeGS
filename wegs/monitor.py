@@ -196,12 +196,20 @@ class PassProcessor:
 
         # Collect images (no thumbnails  original PNGs served directly)
         img_entries = []
+        thumbs_dir = os.path.join(self.output, ".thumbs", folder_name)
         for abs_path, rel_path, img_type, label in images:
-            img_entries.append({
+            entry = {
                 "type": img_type,
                 "label": label,
                 "image_path": f"{folder_name}/{rel_path}".replace("\\", "/"),
-            })
+            }
+            # Generate thumbnail
+            thumb = generate_thumbnail(abs_path, thumbs_dir, width=self.thumb_w, quality=self.thumb_q)
+            if thumb:
+                # Store relative to output folder for serving
+                thumb_rel = os.path.relpath(thumb, self.output).replace("\\", "/")
+                entry["thumbnail_path"] = thumb_rel
+            img_entries.append(entry)
 
         # Timestamp
         dt_utc = self._extract_timestamp(folder_name)
