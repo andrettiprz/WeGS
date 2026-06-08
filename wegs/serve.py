@@ -24,6 +24,8 @@ class WeGSHandler(SimpleHTTPRequestHandler):
 
     def translate_path(self, path):
         """Map URL paths to filesystem paths."""
+        from urllib.parse import unquote
+        path = unquote(path, errors="surrogatepass")
         path = path.split("?", 1)[0].split("#", 1)[0]
         path = path.lstrip("/")
 
