@@ -8,6 +8,7 @@ import sys
 import json
 import threading
 import mimetypes
+from socket import SOL_SOCKET, SO_REUSEADDR
 from pathlib import Path
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
@@ -95,6 +96,7 @@ def run_serve(output_folder, port=5173):
     """Start the WeGS HTTP server."""
     handler = lambda *args: WeGSHandler(*args, output_folder=output_folder)
     server = HTTPServer(("0.0.0.0", port), handler)
+    server.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
     print(f"   Web UI:    http://localhost:{port}")
     print(f"   Data:      {output_folder}")
