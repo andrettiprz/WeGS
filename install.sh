@@ -172,7 +172,10 @@ if [ ! -f "$CONFIG_FILE" ]; then
     if $AUTO_YES; then
         OUTPUT="${WEGS_OUTPUT:-}"
         if [ -z "$OUTPUT" ]; then
-            OUTPUT="$HOME/Documents/live_output"
+            DEFAULT="$HOME/Documents/live_output"
+            printf "  ${CYAN}Output folder [%s]:${NC} " "$DEFAULT"
+            read -r OUTPUT
+            OUTPUT="${OUTPUT:-$DEFAULT}"
         fi
         mkdir -p "$OUTPUT" 2>/dev/null || warn "Cannot create $OUTPUT"
         $PYTHON -c "
