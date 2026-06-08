@@ -33,6 +33,19 @@ class WeGSHandler(SimpleHTTPRequestHandler):
         if not path or path == "index.html":
             return str(INSTALL_DIR / "web" / "dist" / "index.html")
 
+        # Config file  serve public fields only (no tokens/keys)
+        if path == "config.json":
+            cfg = INSTALL_DIR / "config.json"
+            if cfg.exists():
+                with open(cfg) as f:
+                    data = json.load(f)
+                public = {k: v for k, v in data.items() if k not in ("telegram", "supabase")}
+                # Serve from temp location
+                tmp = INSTALL_DIR / "web" / "dist" / "_config.json"
+                with open(tmp, "w") as f:
+                    json.dump(public, f)
+                return str(tmp)
+
         # Output folder files (passes, thumbs, manifest)
         if self.output_folder:
             out = Path(self.output_folder)

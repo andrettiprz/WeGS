@@ -829,6 +829,12 @@ body::before {
   color: var(--text-primary);
 }
 
+.station__detail-value--mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
 .station__map {
   border-radius: var(--radius-lg);
   overflow: hidden;
