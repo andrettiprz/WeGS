@@ -134,7 +134,7 @@ def _label_from_filename(filename):
 #  Thumbnail generation 
 
 def generate_thumbnail(image_path, thumb_dir, width=400, quality=70):
-    """Generate a JPEG thumbnail, save to thumb_dir. Returns path or None."""
+    """Generate a JPEG thumbnail. Uses relative path structure to avoid name collisions."""
     if Image is None:
         return None
     try:
@@ -143,9 +143,9 @@ def generate_thumbnail(image_path, thumb_dir, width=400, quality=70):
         if w > width:
             new_h = int(h * width / w)
             img = img.resize((width, new_h), Image.Resampling.LANCZOS)
-        os.makedirs(thumb_dir, exist_ok=True)
         out_name = Path(image_path).stem + ".jpg"
         out_path = os.path.join(thumb_dir, out_name)
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
         img.save(out_path, "JPEG", quality=quality)
         return out_path
     except Exception as e:
@@ -194,19 +194,21 @@ class PassProcessor:
             print(f"    No images  skipped")
             return
 
-        # Collect images (no thumbnails  original PNGs served directly)
+        # Collect images with thumbnails
         img_entries = []
-        thumbs_dir = os.path.join(self.output, ".thumbs", folder_name)
+        thumbs_base = os.path.join(self.output, ".thumbs", folder_name)
         for abs_path, rel_path, img_type, label in images:
             entry = {
                 "type": img_type,
                 "label": label,
                 "image_path": f"{folder_name}/{rel_path}".replace("\\", "/"),
             }
-            # Generate thumbnail
-            thumb = generate_thumbnail(abs_path, thumbs_dir, width=self.thumb_w, quality=self.thumb_q)
+            # Thumbnail: mirror folder structure, use .jpg
+            thumb_name = Path(rel_path).stem + ".jpg"
+            thumb_sub = os.path.dirname(rel_path)
+            thumb_dir = os.path.join(thumbs_base, thumb_sub)
+            thumb = generate_thumbnail(abs_path, thumb_dir, width=self.thumb_w, quality=self.thumb_q)
             if thumb:
-                # Store relative to output folder for serving
                 thumb_rel = os.path.relpath(thumb, self.output).replace("\\", "/")
                 entry["thumbnail_path"] = thumb_rel
             img_entries.append(entry)
