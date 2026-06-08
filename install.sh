@@ -206,11 +206,18 @@ create_symlink() {
     if [ -L "$target" ] || [ -f "$target" ]; then
         rm -f "$target" 2>/dev/null
     fi
-    # Create wrapper script
+    # Create wrapper script with smart Python detection
     cat > "$target" << 'WRAPPER'
 #!/usr/bin/env bash
 INSTALL_DIR="${WEGS_DIR:-$HOME/.wegs}"
-PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+PYTHON=""
+for cmd in python3.12 python3.11 python3.10 python3 python; do
+    if command -v "$cmd" &>/dev/null && "$cmd" -c "import xml.parsers.expat" &>/dev/null 2>&1; then
+        PYTHON="$cmd"; break
+    fi
+done
+[ -z "$PYTHON" ] && PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+[ -z "$PYTHON" ] && { echo "No working Python found"; exit 1; }
 exec "$PYTHON" "$INSTALL_DIR/wegs.py" "$@"
 WRAPPER
     chmod +x "$target"
