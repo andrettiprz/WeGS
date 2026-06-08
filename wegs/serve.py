@@ -13,6 +13,19 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 INSTALL_DIR = Path(__file__).parent.parent.resolve()
 
+_empty_manifest_cache = None
+
+def _empty_manifest():
+    """Return a temp file with empty manifest JSON."""
+    global _empty_manifest_cache
+    if _empty_manifest_cache and Path(_empty_manifest_cache).exists():
+        return _empty_manifest_cache
+    tmp = INSTALL_DIR / "web" / "dist" / "_empty_manifest.json"
+    with open(tmp, "w") as f:
+        json.dump({"passes": [], "updated": None}, f)
+    _empty_manifest_cache = str(tmp)
+    return _empty_manifest_cache
+
 class WeGSHandler(SimpleHTTPRequestHandler):
     """Serves SPA from web/dist/ and output files from the configured folder."""
 
@@ -52,6 +65,9 @@ class WeGSHandler(SimpleHTTPRequestHandler):
             candidate = out / path
             if candidate.exists():
                 return str(candidate)
+            # manifest.json not ready yet -> serve empty placeholder
+            if path == "manifest.json":
+                return str(_empty_manifest())
 
         # SPA static files (JS, CSS, etc.)
         spa = INSTALL_DIR / "web" / "dist" / path

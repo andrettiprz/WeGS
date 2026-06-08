@@ -26,22 +26,28 @@ function App() {
 
   useEffect(() => {
     let cancelled = false
+    let timer = null
     async function load() {
       try {
         const data = await fetchPasses()
         if (!cancelled) {
           setPasses(data)
           setLoading(false)
+          // Auto-refresh until passes appear (scan in progress)
+          if (data.length === 0) {
+            timer = setTimeout(load, 5000)
+          }
         }
       } catch (err) {
         if (!cancelled) {
           setError(err.message)
           setLoading(false)
+          timer = setTimeout(load, 10000)
         }
       }
     }
     load()
-    return () => { cancelled = true }
+    return () => { cancelled = true; clearTimeout(timer) }
   }, [])
 
   return (
