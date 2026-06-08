@@ -52,26 +52,83 @@ def count_pngs(folder):
 #  Helper: classify image 
 
 def classify_image(rel_path, filename):
+    """
+    Classify SatDump output images into type (FILLED/RAW) and human-readable label.
+    Matches all known Meteor M2-x MSU-MR pipeline outputs.
+    """
     path = rel_path.replace("\\", "/").lower()
     fname = filename.lower()
+    is_filled = "filled" in path or "(filled)" in path
+    typ = "FILLED" if is_filled else "RAW"
+
+    # Skip helper files
     if "thumb" in fname or fname.startswith("hdr_"):
         return None, None
-    if "filled" in path or "(filled)" in path:
-        if "mcir_map" in fname: return ("FILLED", "MCIR Map")
-        if "mcir" in fname: return ("FILLED", "MCIR Filled")
-        if "321" in fname or "natural" in fname: return ("FILLED", "Natural Color (321)")
-        if "221" in fname: return ("FILLED", "Water/Ice (221)")
-        if "equalized" in fname: return ("FILLED", "Equalized")
-        return ("FILLED", filename)
-    # RAW
-    if "mcir_corrected" in fname: return ("RAW", "MCIR Corrected")
-    if "mcir" in fname: return ("RAW", "MCIR Raw")
-    for ch in range(1, 7):
-        if f"msu-mr-{ch}" in fname: return ("RAW", f"MSU-MR Channel {ch}")
-    if "321" in fname: return ("RAW", "Natural Color (321)")
-    if "221" in fname: return ("RAW", "Water/Ice (221)")
-    if "rgb" in fname: return ("RAW", filename)
-    return ("RAW", filename)
+
+    # Build label from filename
+    label = _label_from_filename(filename)
+
+    # Detect extra suffixes (skip if already in base label)
+    extras = []
+    if "map" in fname and "map" not in label.lower():
+        extras.append("Map")
+    if "corrected" in fname and "corrected" not in label.lower():
+        extras.append("Corrected")
+
+    if extras:
+        label = f"{label} ({', '.join(extras)})"
+
+    return (typ, label)
+
+
+def _label_from_filename(filename):
+    """Extract a human-readable label from a SatDump product filename."""
+    fname = filename.lower()
+    # Strip extension
+    name = filename.rsplit(".", 1)[0] if "." in filename else filename
+
+    # MSU-MR channels -> "Channel N"
+    import re
+    m = re.match(r"msu-mr-(\d+)", fname, re.IGNORECASE)
+    if m:
+        return f"Channel {m.group(1)}"
+
+    # Known RGB composites
+    if "mcir_corrected" in fname:
+        return "MCIR Corrected"
+    if "mcir_map" in fname:
+        return "MCIR Map"
+    if "mcir" in fname:
+        return "MCIR"
+    if "msa" in fname:
+        return "MSA"
+    if "cloud_tops" in fname:
+        return "Cloud Tops (3.9um)"
+    if "124" in fname and "false_color" in fname:
+        return "False Color (1-2-4)"
+    if "122" in fname and "false_color" not in fname:
+        return "Natural Color (1-2-2)"
+    if "221" in fname and "false_color" in fname:
+        return "False Color (2-2-1)"
+    if "avhrr_3a21" in fname:
+        return "False Color (3a-2-1)"
+    if "321" in fname:
+        return "Natural Color (3-2-1)"
+    if "avhrr_221" in fname:
+        return "False Color (2-2-1)"
+    # Calibrated/uncalibrated channel bands
+    if "shortwave_ir" in fname and "calibrated" in fname:
+        return "SWIR (Calibrated)"
+    if "shortwave_ir" in fname:
+        return "SWIR (Uncalibrated)"
+    # Equalized
+    if "equalized" in fname:
+        return "Equalized"
+    # Projected
+    if "projected" in fname:
+        return name
+
+    return name
 
 
 #  Thumbnail generation 
