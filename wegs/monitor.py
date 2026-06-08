@@ -135,16 +135,13 @@ class PassProcessor:
             print(f"  ⏭  No images — skipped")
             return
 
-        # Thumbnails — paths relative to output_folder root (for web serving)
-        thumb_dir = os.path.join(pass_path, "thumbs")
+        # Collect images (no thumbnails — original PNGs served directly)
         img_entries = []
         for abs_path, rel_path, img_type, label in images:
-            thumb_path = generate_thumbnail(abs_path, thumb_dir, self.thumb_w, self.thumb_q)
             img_entries.append({
                 "type": img_type,
                 "label": label,
                 "image_path": f"{folder_name}/{rel_path}".replace("\\", "/"),
-                "thumbnail_path": f"{folder_name}/{(os.path.relpath(thumb_path, pass_path) if thumb_path else rel_path)}".replace("\\", "/"),
             })
 
         # Timestamp
