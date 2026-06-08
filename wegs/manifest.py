@@ -1,10 +1,21 @@
 """
-Manifest  reads/writes the local pass index (manifest.json).
-No database required. No external dependencies.
+Manifest -- reads/writes the local pass index (manifest.json).
+Thread-safe with atomic writes. No database required.
 """
 import json
 import os
+import threading
 from pathlib import Path
+
+_lock = threading.Lock()
+
+
+def _atomic_write(path, data):
+    """Write to temp file, then rename atomically."""
+    tmp = str(path) + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2)
+    os.replace(tmp, path)
 
 
 def load(output_folder):
@@ -17,27 +28,28 @@ def load(output_folder):
 
 
 def save(output_folder, data):
-    """Write manifest.json to the output folder."""
+    """Write manifest.json to the output folder. Thread-safe."""
     import datetime
     data["updated"] = datetime.datetime.utcnow().isoformat()
     path = Path(output_folder) / "manifest.json"
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+    with _lock:
+        _atomic_write(path, data)
 
 
 def add_pass(output_folder, pass_data, pass_images):
     """
-    Add a pass to the manifest.
+    Add a pass to the manifest. Thread-safe.
     pass_data: dict with satellite, timestamp, folder_name, png_count, raw_count, filled_count, status
-    pass_images: list of dicts with type, label, thumbnail_path, image_path
+    pass_images: list of dicts with type, label, image_path
     """
-    manifest = load(output_folder)
-    entry = {
-        **pass_data,
-        "images": pass_images,
-    }
-    manifest["passes"].insert(0, entry)  # newest first
-    save(output_folder, manifest)
+    with _lock:
+        manifest = load(output_folder)
+        entry = {
+            **pass_data,
+            "images": pass_images,
+        }
+        manifest["passes"].insert(0, entry)  # newest first
+        _atomic_write(Path(output_folder) / "manifest.json", manifest)
 
 
 def pass_exists(output_folder, folder_name):
