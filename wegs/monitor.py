@@ -160,7 +160,8 @@ class PassProcessor:
         self.cfg = cfg
         self.output = cfg["output_folder"]
         self.proc = cfg.get("processing", {})
-        self.wait = self.proc.get("wait_seconds", 1200)
+        self.wait = self.proc.get("wait_seconds", 60)
+        self.wait_startup = 1  # startup scan: no delay needed
         self.thumb_w = self.proc.get("thumbnail_width", 400)
         self.thumb_q = self.proc.get("thumbnail_quality", 70)
         self.tz_name = self.proc.get("timezone", "UTC")
@@ -168,13 +169,14 @@ class PassProcessor:
         self.sb = SupabaseClient.from_config(cfg)
         self.sdr_map = cfg.get("sdr_map", {})
 
-    def process(self, pass_path):
+    def process(self, pass_path, wait_override=None):
         folder_name = os.path.basename(pass_path)
         sat = identify_satellite(folder_name)
         sdr_info = self.sdr_map.get(sat, {"sdr": "Unknown", "antenna": "Unknown"})
 
-        print(f" Processing {folder_name}... waiting {self.wait}s")
-        time.sleep(self.wait)
+        w = wait_override if wait_override is not None else self.wait
+        print(f" Processing {folder_name}... waiting {w}s")
+        time.sleep(w)
 
         # Count
         path_msu = os.path.join(pass_path, "MSU-MR")
@@ -347,7 +349,7 @@ def run():
                 pass_path = os.path.join(output, folder_name)
                 print(f" Scanning existing: {folder_name}")
                 try:
-                    processor.process(pass_path)
+                    processor.process(pass_path, wait_override=processor.wait_startup)
                 except Exception as e:
                     print(f"   Error scanning {folder_name}: {e}")
         print(f"[OK] Startup scan complete  {len(existing)} folders checked")
