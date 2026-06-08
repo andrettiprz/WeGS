@@ -50,38 +50,44 @@ step "Checking Python"
 PYTHON=""
 # Allow explicit override: WEGS_PYTHON=python3.12 curl ... | bash
 if [ -n "${WEGS_PYTHON:-}" ]; then
-    if command -v "$WEGS_PYTHON" &>/dev/null; then
+    if command -v "$WEGS_PYTHON" &>/dev/null && "$WEGS_PYTHON" -c "import xml.parsers.expat, ssl" &>/dev/null 2>&1; then
         ver=$("$WEGS_PYTHON" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
         PYTHON="$WEGS_PYTHON"; ok "WEGS_PYTHON: $WEGS_PYTHON $ver"
     else
-        warn "WEGS_PYTHON=$WEGS_PYTHON not found, auto-detecting..."
+        warn "WEGS_PYTHON=$WEGS_PYTHON not found or pip broken, auto-detecting..."
     fi
 fi
 if [ -z "$PYTHON" ]; then
-for cmd in python3 python python3.12 python3.11 python3.10 python3.9; do
-    if command -v "$cmd" &>/dev/null; then
-        ver=$("$cmd" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
-        major=$(echo "$ver" | cut -d. -f1)
-        minor=$(echo "$ver" | cut -d. -f2 2>/dev/null || echo 0)
-        if [ "$major" -ge 3 ] && [ "$minor" -ge 8 ]; then
-            PYTHON="$cmd"; ok "$cmd $ver"; break
+    for cmd in python3 python python3.12 python3.11 python3.10 python3.9 python3.13; do
+        if command -v "$cmd" &>/dev/null; then
+            ver=$("$cmd" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
+            major=$(echo "$ver" | cut -d. -f1)
+            minor=$(echo "$ver" | cut -d. -f2 2>/dev/null || echo 0)
+            if [ "$major" -ge 3 ] && [ "$minor" -ge 8 ]; then
+            # Verify Python actually works (catches broken installs like bad expat)
+            if "$cmd" -c "import xml.parsers.expat" &>/dev/null && "$cmd" -c "import ssl" &>/dev/null; then
+                    PYTHON="$cmd"; ok "$cmd $ver"; break
+                else
+                    warn "$cmd $ver found but pip is broken -- skipping"
+                fi
+            fi
+        fi
+    done
+    if [ -z "$PYTHON" ]; then
+        err "No working Python 3.8+ found with pip."
+        if $AUTO_YES; then
+            case "$OS" in
+                macos) brew install python@3.12 2>/dev/null || { err "brew install failed"; exit 1; };;
+                linux) sudo apt-get install -y python3 python3-pip 2>/dev/null || { err "apt-get failed"; exit 1; };;
+            esac
+            PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null || echo "")
+            [ -n "$PYTHON" ] && ok "Python installed: $PYTHON" || { err "Python install failed"; exit 1; }
+        else
+            echo "  Install Python 3.8+ then re-run: https://python.org"
+            exit 1
         fi
     fi
-done
-if [ -z "$PYTHON" ]; then
-    err "Python 3.8+ not found."
-    if $AUTO_YES; then
-        case "$OS" in
-            macos) brew install python@3.12 2>/dev/null || { err "brew install failed"; exit 1; };;
-            linux) sudo apt-get install -y python3 python3-pip 2>/dev/null || { err "apt-get failed"; exit 1; };;
-        esac
-        PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null || echo "")
-    else
-        echo "  Install Python 3.8+ then re-run: https://python.org"
-        exit 1
-    fi
 fi
-fi  # end of WEGS_PYTHON check auto-detect block
 
 # ─────────────────────────────────────────────
 # Step 2: Clone / update
