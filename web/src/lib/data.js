@@ -28,8 +28,8 @@ export async function fetchPasses() {
         id: img.image_path || img.label,
         type: img.type,
         label: img.label,
-        image_url: (img.image_path || '').replace(/\\/g, '/'),
-        thumbnail_url: (img.thumbnail_path || img.image_path || '').replace(/\\/g, '/'),
+        image_url: '/' + (img.image_path || '').replace(/\\/g, '/'),
+        thumbnail_url: '/' + (img.thumbnail_path || img.image_path || '').replace(/\\/g, '/'),
       })),
     }))
   } catch {
