@@ -351,7 +351,8 @@ def run():
     def _scan_existing():
         pattern = re.compile(r"^\d{4}-\d{2}-\d{2}")
         existing = sorted(
-            [d for d in os.listdir(output) if pattern.match(d) and os.path.isdir(os.path.join(output, d))]
+            [d for d in os.listdir(output) if pattern.match(d) and os.path.isdir(os.path.join(output, d))],
+            key=lambda d: d  # ISO date folders sort chronologically by name
         )
         processor = PassProcessor(cfg)
         for folder_name in existing:

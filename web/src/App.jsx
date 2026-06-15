@@ -30,20 +30,17 @@ function App() {
     async function load() {
       try {
         const data = await fetchPasses()
-        if (!cancelled) {
-          setPasses(data)
-          setLoading(false)
-          // Auto-refresh until passes appear (scan in progress)
-          if (data.length === 0) {
-            timer = setTimeout(load, 5000)
-          }
-        }
+        if (cancelled) return
+        setPasses(data)
+        setLoading(false)
+        // Poll: every 5s while empty (scan in progress), every 30s after
+        const delay = data.length === 0 ? 5000 : 30000
+        timer = setTimeout(load, delay)
       } catch (err) {
-        if (!cancelled) {
-          setError(err.message)
-          setLoading(false)
-          timer = setTimeout(load, 10000)
-        }
+        if (cancelled) return
+        setError(err.message)
+        setLoading(false)
+        timer = setTimeout(load, 10000)
       }
     }
     load()
